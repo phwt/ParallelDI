@@ -12,21 +12,22 @@ namespace ParallelDI.Controllers
 {
     [ApiController]
     [Route("[controller]")]
-    public class WeatherForecastController : ControllerBase
+    public class APIController : ControllerBase
     {
-        private readonly ILogger<WeatherForecastController> _logger;
+        private readonly ILogger<APIController> _logger;
         private readonly GuidService _guidService;
 
-        public WeatherForecastController(ILogger<WeatherForecastController> logger, GuidService guidService)
+        string[] items = new[] { "Alpha", "Bravo", "Charlie", "Delta" };
+
+        public APIController(ILogger<APIController> logger, GuidService guidService)
         {
             _logger = logger;
             _guidService = guidService;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Post()
+        [HttpGet]
+        public async Task<IActionResult> PostService()
         {
-            string[] items = new[] { "Alpha", "Bravo", "Charlie", "Delta" };
             var results = new List<string>() { };
 
             var bag = new ConcurrentBag<object>();
@@ -35,6 +36,24 @@ namespace ParallelDI.Controllers
                 _guidService.CustomID = $"{item}ID";
                 await Task.Delay(1000);
                 results.Add($"{_guidService.GetID()} - {_guidService.CustomID} - {item}");
+            });
+            await Task.WhenAll(tasks);
+
+            return new OkObjectResult(results);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> PostLocal()
+        {
+            var results = new List<string>() { };
+
+            var bag = new ConcurrentBag<object>();
+            var tasks = items.Select(async item =>
+            {
+                var localGuidService = new GuidService();
+                localGuidService.CustomID = $"{item}ID";
+                await Task.Delay(1000);
+                results.Add($"{localGuidService.GetID()} - {localGuidService.CustomID} - {item}");
             });
             await Task.WhenAll(tasks);
 
